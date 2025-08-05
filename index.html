@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Segmented Sphere Visualization</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        #canvas-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        #toggle-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 100;
+        }
+        
+        #data-panel {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 500px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 100;
+        }
+        
+        #search {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        #data-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        #data-list li {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        #data-list li:hover {
+            background-color: #f5f5f5;
+        }
+        
+        #data-list li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="controls">
+        <button id="toggle-button">Show Data List</button>
+    </div>
+    
+    <div id="data-panel">
+        <input type="text" id="search" placeholder="Search data...">
+        <ul id="data-list"></ul>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script>
+        // Data list
+        const dataList = [
+	    "aaronlouwill",
+	    "basiliusaloysius",
+	    "censuriuscharlemagne",
+	    "chankimtek325",
+	    "dimitrideodatus",
+	    "ecclesiuseucarius",
+	    "flaviusfacio",
+	    "guoruyi08",
+	    "hippolytushonoratus",
+	    "ignatiusischyrion",
+	    "jonatusjarlath",
+	    "kolamloak",
+	    "konstantinkizito",
+            "louisewilliam08",
+            "louisewilliamcontact",
+            "louwillscience",
+	    "lw080907",
+	    "mailliwesiuol.01",
+	    "mailliwesiuol.02",
+	    "mailliwesiuolalfa",
+	    "mailliwesiuolder",
+	    "nemesiusneophytus",
+	    "oceanusophiuchus",
+	    "polycarpusperegrinus",
+	    "qasimdostoevsky",
+	    "reveriusredemptus",
+	    "stanislavsylvester",
+	    "theresavanhindenburg",
+	    "ulyssesulyanov",
+	    "verethragnaaaa",
+	    "verethragnazoroastrian",
+	    "williamlouise087",
+	    "williamlouise215",
+	    "williamlouise482",
+	    "williamlouise487",
+	    "williamlouise513",
+	    "williamlouise562",
+	    "williamlouise624",
+	    "williamlouise72"
+        ];
+        
+        // Tentukan warna untuk setiap data di sini
+        const dataColors = {
+	    "aaronlouwill": "#1C542D",
+	    "basiliusaloysius": "#BEBD7F",
+	    "censuriuscharlemagne": "#252850",
+	    "chankimtek325": "#606E8C",
+	    "dimitrideodatus": "#75151E",
+	    "ecclesiuseucarius": "#2F353B",
+	    "flaviusfacio": "#E5BE01",
+	    "guoruyi08": "#6C4675",
+	    "hippolytushonoratus": "#308446",
+	    "ignatiusischyrion": "#A52019",
+	    "jonatusjarlath": "#F39F18",
+	    "kolamloak": "#A52019",
+	    "konstantinkizito": "#781F19",
+            "louisewilliam08": "#33FF57",   
+            "louisewilliamcontact": "#3357FF", 
+            "louwillscience": "#F033FF",
+	    "lw080907": "#734222",
+	    "mailliwesiuol.01": "#497E76",
+	    "mailliwesiuol.02": "#B5B8B1",
+	    "mailliwesiuolalfa": "#256D7B",
+	    "mailliwesiuolder": "#B5B8B1",
+	    "nemesiusneophytus": "#D0D0D0",
+	    "oceanusophiuchus": "#C1876B",
+	    "polycarpusperegrinus": "#4A192C",
+	    "qasimdostoevsky": "#20214F",
+	    "reveriusredemptus": "#4E3B31",
+	    "stanislavsylvester": "#1F3A3D",
+	    "theresavanhindenburg": "#763C28",
+	    "ulyssesulyanov": "#606E8C",
+	    "verethragnaaaa": "#A52019",
+	    "verethragnazoroastrian": "#EDFF21",
+	    "williamlouise087": "#F3A505",
+	    "williamlouise215": "#8B8C7A",
+	    "williamlouise482": "#763C28",
+	    "williamlouise487": "#1D1E33",
+	    "williamlouise513": "#FF5733",
+	    "williamlouise562": "#1B5583",
+	    "williamlouise624":	"#C6A664",
+	    "williamlouise72": "#3E3B32"
+        };
+        
+        // Initialize Three.js scene
+        let scene, camera, renderer, controls;
+        let segments = [];
+        const sphereRadius = 1.5;
+        const sphereSegments = 64;
+        
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0xffffff);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Create initial sphere with all data
+            updateSphereSegments();
+            
+            // Add orbit controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.25;
+            controls.screenSpacePanning = false;
+            controls.maxPolarAngle = Math.PI;
+            controls.minPolarAngle = 0;
+            controls.minDistance = 0.1;
+            controls.maxDistance = Infinity;
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // Set up UI controls
+            setupUI();
+            
+            // Start animation loop
+            animate();
+        }
+        
+        function updateSphereSegments() {
+            // Remove all existing segments
+            segments.forEach(segment => {
+                scene.remove(segment.mesh);
+            });
+            segments = [];
+            
+            const dataCount = dataList.length;
+            if (dataCount === 0) return;
+            
+            // Calculate angle per segment (evenly distributed around the sphere)
+            const anglePerSegment = (Math.PI * 2) / dataCount;
+            
+            // Create segments
+            for (let i = 0; i < dataCount; i++) {
+                const data = dataList[i];
+                const startAngle = i * anglePerSegment;
+                const endAngle = (i + 1) * anglePerSegment;
+                
+                // Create a sphere segment (like a "slice" of the sphere)
+                const geometry = new THREE.SphereGeometry(
+                    sphereRadius, 
+                    sphereSegments, 
+                    sphereSegments,
+                    startAngle, 
+                    anglePerSegment,
+                    0,
+                    Math.PI
+                );
+                
+                // Gunakan warna yang sudah ditentukan
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(dataColors[data]),
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 1.0
+                });
+                
+                const segment = new THREE.Mesh(geometry, material);
+                scene.add(segment);
+                
+                segments.push({
+                    mesh: segment,
+                    data: data
+                });
+            }
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        function setupUI() {
+            const toggleButton = document.getElementById('toggle-button');
+            const dataPanel = document.getElementById('data-panel');
+            const searchInput = document.getElementById('search');
+            const dataListElement = document.getElementById('data-list');
+            
+            // Populate data list
+            dataList.forEach(data => {
+                const li = document.createElement('li');
+                li.textContent = data;
+                li.addEventListener('click', () => {
+                    updateSphereSegments();
+                    dataPanel.style.display = 'none';
+                });
+                dataListElement.appendChild(li);
+            });
+            
+            // Toggle data panel
+            toggleButton.addEventListener('click', () => {
+                if (dataPanel.style.display === 'block') {
+                    dataPanel.style.display = 'none';
+                    toggleButton.textContent = 'Show Data List';
+                } else {
+                    dataPanel.style.display = 'block';
+                    toggleButton.textContent = 'Hide Data List';
+                }
+            });
+            
+            // Search functionality
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const items = dataListElement.getElementsByTagName('li');
+                
+                Array.from(items).forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (text.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
